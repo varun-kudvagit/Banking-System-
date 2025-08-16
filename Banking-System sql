@@ -1,0 +1,368 @@
+-- Creating database and using it
+CREATE DATABASE BankFlow;
+USE BankFlow;
+
+-- Branches table
+CREATE TABLE branches (
+    branch_id INT PRIMARY KEY AUTO_INCREMENT,
+    branch_name VARCHAR(100) NOT NULL,
+    branch_code VARCHAR(10) UNIQUE NOT NULL,
+    address TEXT,
+    city VARCHAR(50),
+    state VARCHAR(50),
+    zip_code VARCHAR(10),
+    phone VARCHAR(15),
+    manager_name VARCHAR(100),
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Customers table
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY AUTO_INCREMENT,
+    customer_name VARCHAR(100) NOT NULL,
+    date_of_birth DATE,
+    gender ENUM('Male', 'Female', 'Other'),
+    phone VARCHAR(15),
+    email VARCHAR(100) UNIQUE,
+    address TEXT,
+    city VARCHAR(50),
+    state VARCHAR(50),
+    zip_code VARCHAR(10),
+    occupation VARCHAR(100),
+    annual_income DECIMAL(15,2),
+    branch_id INT,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+);
+
+-- Accounts table
+CREATE TABLE accounts (
+    account_number VARCHAR(20) PRIMARY KEY,
+    customer_id INT NOT NULL,
+    account_type ENUM('Savings', 'Checking', 'Fixed_Deposit', 'Current') NOT NULL,
+    balance DECIMAL(15,2) DEFAULT 0.00,
+    minimum_balance DECIMAL(15,2) DEFAULT 1000.00,
+    interest_rate DECIMAL(5,2) DEFAULT 3.50,
+    opening_date DATE NOT NULL,
+    closing_date DATE NULL,
+    branch_id INT,
+    status ENUM('Active', 'Closed', 'Frozen') DEFAULT 'Active',
+    last_transaction_date DATE,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+);
+
+-- Transactions table
+CREATE TABLE transactions (
+    transaction_id INT PRIMARY KEY AUTO_INCREMENT,
+    account_number VARCHAR(20) NOT NULL,
+    transaction_type ENUM('CREDIT', 'DEBIT') NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    description VARCHAR(255),
+    reference_number VARCHAR(50),
+    balance_after DECIMAL(15,2),
+    transaction_mode ENUM('ATM', 'Online', 'Branch', 'Mobile', 'Transfer') NOT NULL,
+    status ENUM('Completed', 'Pending', 'Failed') DEFAULT 'Completed',
+    FOREIGN KEY (account_number) REFERENCES accounts(account_number),
+    INDEX idx_account_date (account_number, transaction_date),
+    INDEX idx_transaction_date (transaction_date)
+);
+
+-- Loans table
+CREATE TABLE loans (
+    loan_id INT PRIMARY KEY AUTO_INCREMENT,
+    customer_id INT NOT NULL,
+    loan_type ENUM('Personal', 'Home', 'Car', 'Education', 'Business') NOT NULL,
+    loan_amount DECIMAL(15,2) NOT NULL,
+    interest_rate DECIMAL(5,2) NOT NULL,
+    loan_tenure_months INT NOT NULL,
+    emi_amount DECIMAL(10,2) NOT NULL,
+    sanctioned_date DATE NOT NULL,
+    first_emi_date DATE NOT NULL,
+    last_payment_date DATE,
+    outstanding_amount DECIMAL(15,2),
+    loan_status ENUM('Active', 'Closed', 'Defaulted', 'Pending') DEFAULT 'Pending',
+    branch_id INT,
+    guarantor_name VARCHAR(100),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+);
+
+-- Credits table
+CREATE TABLE credit_cards (
+    card_id INT PRIMARY KEY AUTO_INCREMENT,
+    customer_id INT NOT NULL,
+    card_number VARCHAR(19) UNIQUE NOT NULL,
+    card_type ENUM('Silver', 'Gold', 'Platinum', 'Diamond') NOT NULL,
+    credit_limit DECIMAL(15,2) NOT NULL,
+    current_balance DECIMAL(15,2) DEFAULT 0.00,
+    available_limit DECIMAL(15,2),
+    issue_date DATE NOT NULL,
+    expiry_date DATE NOT NULL,
+    annual_fee DECIMAL(8,2),
+    interest_rate DECIMAL(5,2) DEFAULT 18.00,
+    status ENUM('Active', 'Blocked', 'Expired') DEFAULT 'Active',
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+-- Employees table
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY AUTO_INCREMENT,
+    employee_name VARCHAR(100) NOT NULL,
+    position VARCHAR(50),
+    branch_id INT,
+    hire_date DATE,
+    salary DECIMAL(10,2),
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(15),
+    status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+);
+
+-- Inserting branches
+INSERT INTO branches (branch_name, branch_code, address, city, state, zip_code, phone, manager_name) VALUES
+('Main Branch', 'MB001', '123 Main St', 'Mumbai', 'Maharashtra', '400001', '022-12345678', 'Rajesh Kumar'),
+('Central Branch', 'CB002', '456 Central Ave', 'Delhi', 'Delhi', '110001', '011-87654321', 'Priya Sharma'),
+('East Branch', 'EB003', '789 East Road', 'Kolkata', 'West Bengal', '700001', '033-11223344', 'Amit Singh');
+
+-- Inserting customers
+INSERT INTO customers (customer_name, date_of_birth, gender, phone, email, address, city, state, zip_code, occupation, annual_income, branch_id) VALUES
+('John Doe', '1990-05-15', 'Male', '9876543210', 'john.doe@email.com', '123 Park Street', 'Mumbai', 'Maharashtra', '400001', 'Software Engineer', 800000.00, 1),
+('Jane Smith', '1988-03-20', 'Female', '9876543211', 'jane.smith@email.com', '456 Garden Road', 'Delhi', 'Delhi', '110001', 'Marketing Manager', 650000.00, 2),
+('Mike Johnson', '1992-08-10', 'Male', '9876543212', 'mike.johnson@email.com', '789 Hill View', 'Kolkata', 'West Bengal', '700001', 'Business Analyst', 720000.00, 3);
+
+-- Inserting accounts
+INSERT INTO accounts (account_number, customer_id, account_type, balance, opening_date, branch_id) VALUES
+('ACC001000001', 1, 'Savings', 50000.00, '2023-01-15', 1),
+('ACC001000002', 2, 'Checking', 35000.00, '2023-02-20', 2),
+('ACC001000003', 3, 'Savings', 75000.00, '2023-03-10', 3),
+('ACC001000004', 1, 'Fixed_Deposit', 200000.00, '2023-06-15', 1);
+
+-- Inserting transactions
+INSERT INTO transactions (account_number, transaction_type, amount, description, transaction_mode, balance_after) VALUES
+('ACC001000001', 'CREDIT', 5000.00, 'Salary Credit', 'Online', 55000.00),
+('ACC001000001', 'DEBIT', 2000.00, 'ATM Withdrawal', 'ATM', 53000.00),
+('ACC001000002', 'CREDIT', 3000.00, 'Transfer from savings', 'Online', 38000.00),
+('ACC001000003', 'DEBIT', 1500.00, 'Grocery Shopping', 'Mobile', 73500.00);
+
+-- Inserting loans
+INSERT INTO loans (customer_id, loan_type, loan_amount, interest_rate, loan_tenure_months, emi_amount, sanctioned_date, first_emi_date, outstanding_amount, loan_status, branch_id) VALUES
+(1, 'Home', 2500000.00, 8.50, 240, 25500.00, '2023-04-01', '2023-05-01', 2400000.00, 'Active', 1),
+(2, 'Car', 800000.00, 10.00, 60, 17000.00, '2023-05-15', '2023-06-15', 750000.00, 'Active', 2);
+
+DELIMITER //
+CREATE PROCEDURE TransferMoney(
+    IN from_account VARCHAR(20),
+    IN to_account VARCHAR(20),
+    IN transfer_amount DECIMAL(15,2),
+    IN transfer_description VARCHAR(255)
+)
+BEGIN
+    DECLARE from_balance DECIMAL(15,2);
+    DECLARE to_balance DECIMAL(15,2);
+    DECLARE min_balance DECIMAL(15,2);
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    SELECT balance, minimum_balance INTO from_balance, min_balance 
+    FROM accounts WHERE account_number = from_account AND status = 'Active';
+    
+    SELECT balance INTO to_balance 
+    FROM accounts WHERE account_number = to_account AND status = 'Active';
+
+    -- Checking if sufficient balance
+    IF (from_balance - transfer_amount) < min_balance THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient balance';
+    END IF;
+    
+    -- Updating balances
+    UPDATE accounts SET balance = balance - transfer_amount, last_transaction_date = CURDATE() 
+    WHERE account_number = from_account;
+    UPDATE accounts SET balance = balance + transfer_amount, last_transaction_date = CURDATE() 
+    WHERE account_number = to_account;
+    
+    -- Inserting transactions
+    INSERT INTO transactions (account_number, transaction_type, amount, description, transaction_mode, balance_after)
+    VALUES (from_account, 'DEBIT', transfer_amount, transfer_description, 'Transfer', from_balance - transfer_amount);
+    INSERT INTO transactions (account_number, transaction_type, amount, description, transaction_mode, balance_after)
+    VALUES (to_account, 'CREDIT', transfer_amount, transfer_description, 'Transfer', to_balance + transfer_amount);
+    COMMIT;
+END//
+DELIMITER ;
+
+-- Procedure to Calculate Monthly Interest
+DELIMITER //
+CREATE PROCEDURE CalculateMonthlyInterest()
+BEGIN
+    UPDATE accounts 
+    SET balance = balance + (balance * interest_rate / 100 / 12)
+    WHERE account_type = 'Savings' AND status = 'Active';
+    
+    -- Log interest transactions
+    INSERT INTO transactions (account_number, transaction_type, amount, description, transaction_mode, balance_after)
+    SELECT 
+        account_number,
+        'CREDIT',
+        (balance * interest_rate / 100 / 12),
+        'Monthly Interest Credit',
+        'Online',
+        balance
+    FROM accounts 
+    WHERE account_type = 'Savings' AND status = 'Active';
+END//
+DELIMITER ;
+
+-- Trigger to update available credit limit
+DELIMITER //
+CREATE TRIGGER update_credit_limit 
+AFTER UPDATE ON credit_cards
+FOR EACH ROW
+BEGIN
+    UPDATE credit_cards 
+    SET available_limit = credit_limit - current_balance 
+    WHERE card_id = NEW.card_id;
+END//
+DELIMITER ;
+
+-- Trigger for transaction validation
+DELIMITER //
+CREATE TRIGGER validate_transaction 
+BEFORE INSERT ON transactions
+FOR EACH ROW
+BEGIN
+    DECLARE current_balance DECIMAL(15,2);
+    DECLARE min_balance DECIMAL(15,2);
+    
+    SELECT balance, minimum_balance INTO current_balance, min_balance
+    FROM accounts WHERE account_number = NEW.account_number;
+    
+    IF NEW.transaction_type = 'DEBIT' AND (current_balance - NEW.amount) < min_balance THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Transaction would violate minimum balance';
+    END IF;
+    
+    -- Set balance_after if not provided
+    IF NEW.balance_after IS NULL THEN
+        IF NEW.transaction_type = 'CREDIT' THEN
+            SET NEW.balance_after = current_balance + NEW.amount;
+        ELSE
+            SET NEW.balance_after = current_balance - NEW.amount;
+        END IF;
+    END IF;
+END//
+DELIMITER ;
+
+-- Customer Account Summary View
+CREATE VIEW customer_account_summary AS
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    c.email,
+    c.phone,
+    COUNT(a.account_number) as total_accounts,
+    SUM(a.balance) as total_balance,
+    b.branch_name
+FROM customers c
+LEFT JOIN accounts a ON c.customer_id = a.customer_id
+LEFT JOIN branches b ON c.branch_id = b.branch_id
+WHERE c.status = 'Active'
+GROUP BY c.customer_id, c.customer_name, c.email, c.phone, b.branch_name;
+
+-- High Value Customers View
+CREATE VIEW high_value_customers AS
+SELECT 
+    c.customer_name,
+    c.email,
+    SUM(a.balance) as total_balance,
+    COUNT(l.loan_id) as total_loans,
+    SUM(l.loan_amount) as total_loan_amount
+FROM customers c
+LEFT JOIN accounts a ON c.customer_id = a.customer_id
+LEFT JOIN loans l ON c.customer_id = l.customer_id
+GROUP BY c.customer_id, c.customer_name, c.email
+HAVING total_balance > 100000
+ORDER BY total_balance DESC;
+
+-- Monthly Transaction Report View
+CREATE VIEW monthly_transaction_report AS
+SELECT 
+    YEAR(transaction_date) as year,
+    MONTH(transaction_date) as month,
+    transaction_type,
+    COUNT(*) as transaction_count,
+    SUM(amount) as total_amount,
+    AVG(amount) as average_amount
+FROM transactions
+WHERE status = 'Completed'
+GROUP BY YEAR(transaction_date), MONTH(transaction_date), transaction_type
+ORDER BY year DESC, month DESC;
+
+-- Top 10 Customers by Transaction Volume (Last 6 Months)
+CREATE VIEW top_customers_by_volume AS
+SELECT 
+    c.customer_name,
+    c.email,
+    COUNT(t.transaction_id) as transaction_count,
+    SUM(CASE WHEN t.transaction_type = 'CREDIT' THEN t.amount ELSE 0 END) as total_credits,
+    SUM(CASE WHEN t.transaction_type = 'DEBIT' THEN t.amount ELSE 0 END) as total_debits,
+    (SUM(CASE WHEN t.transaction_type = 'CREDIT' THEN t.amount ELSE 0 END) - 
+     SUM(CASE WHEN t.transaction_type = 'DEBIT' THEN t.amount ELSE 0 END)) as net_flow
+FROM customers c
+JOIN accounts a ON c.customer_id = a.customer_id
+JOIN transactions t ON a.account_number = t.account_number
+WHERE t.transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+GROUP BY c.customer_id, c.customer_name, c.email
+ORDER BY transaction_count DESC
+LIMIT 10;
+
+-- Branch Performance Analysis
+CREATE VIEW branch_performance AS
+SELECT 
+    b.branch_name,
+    b.city,
+    COUNT(DISTINCT c.customer_id) as total_customers,
+    COUNT(DISTINCT a.account_number) as total_accounts,
+    SUM(a.balance) as total_deposits,
+    COUNT(DISTINCT l.loan_id) as total_loans,
+    SUM(l.outstanding_amount) as total_loan_outstanding,
+    AVG(c.annual_income) as avg_customer_income
+FROM branches b
+LEFT JOIN customers c ON b.branch_id = c.branch_id
+LEFT JOIN accounts a ON c.customer_id = a.customer_id AND a.status = 'Active'
+LEFT JOIN loans l ON c.customer_id = l.customer_id AND l.loan_status = 'Active'
+GROUP BY b.branch_id, b.branch_name, b.city
+ORDER BY total_deposits DESC;
+
+-- Performance Indexes
+CREATE INDEX idx_customer_email ON customers(email);
+CREATE INDEX idx_customer_phone ON customers(phone);
+CREATE INDEX idx_account_customer ON accounts(customer_id);
+CREATE INDEX idx_account_type ON accounts(account_type);
+CREATE INDEX idx_transaction_amount ON transactions(amount);
+CREATE INDEX idx_loan_customer ON loans(customer_id);
+CREATE INDEX idx_loan_status ON loans(loan_status);
+
+-- Create User Roles
+CREATE USER 'bank_teller'@'localhost' IDENTIFIED BY 'teller_password';
+CREATE USER 'bank_manager'@'localhost' IDENTIFIED BY 'manager_password';
+CREATE USER 'bank_auditor'@'localhost' IDENTIFIED BY 'auditor_password';
+
+-- Grant Permissions
+-- Teller permissions
+GRANT SELECT, INSERT, UPDATE ON customers TO 'bank_teller'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON accounts TO 'bank_teller'@'localhost';
+GRANT SELECT, INSERT ON transactions TO 'bank_teller'@'localhost';
+
+-- Manager permissions
+GRANT ALL PRIVILEGES ON BankFlow.* TO 'bank_manager'@'localhost';
+
+-- Auditor permissions (Read-only)
+GRANT SELECT ON BankFlow.* TO 'bank_auditor'@'localhost';
+
+FLUSH PRIVILEGES;
